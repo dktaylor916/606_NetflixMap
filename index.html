@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+<head> 
+<title></title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+
+<link rel="stylesheet" href="./css/leaflet-search.css" />
+<link rel="stylesheet" href="./css/style.css" />
+<link href='https://api.mapbox.com/mapbox.js/v3.3.1/mapbox.css' rel='stylesheet' />
+
+<style>
+.search-input {
+	font-family:Courier
+}
+.search-input,
+.leaflet-control-search {
+	max-width:400px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+
+<script src='https://api.mapbox.com/mapbox.js/v3.3.1/mapbox.js'></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+crossorigin=""></script>
+<script src="./js/leaflet-search.js"></script>
+
+<script>
+var data,map, rScale;
+function initMap(){
+	map = new L.Map('map', {minZoom:2,zoom: 3, center: new L.latLng([41.575730,13.002411]) });
+
+	
+	map.addLayer(new L.TileLayer('https://api.mapbox.com/styles/v1/dktaybw/cld2yyeur003601r1zel104fr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGt0YXlidyIsImEiOiJjbDlkenBvODMwa2twM3hvZ293bWVpaml1In0._QB63ZC3km-uev6mJkmacg'));
+	
+	map.addControl( new L.Control.Search({
+		url: 'https://nominatim.openstreetmap.org/search?format=json&q={s}',
+		jsonpParam: 'json_callback',
+		propertyName: 'display_name',
+		propertyLoc: ['lat','lon'],
+		marker: L.circleMarker([0,0],{radius:0 }),
+		autoCollapse: true,
+		autoType: false,
+		minLength: 2,
+		zoom:11
+	}) );
+	(function () {
+  var control = new L.Control();
+  control.onAdd = function (map) {
+    var azoom = L.DomUtil.create("a", "resetzoom");
+    azoom.innerHTML = "[Reset Zoom]";
+    L.DomEvent.disableClickPropagation(azoom).addListener(
+      azoom,
+      "click",
+      function () {
+        map.setView(map.options.center, map.options.zoom);
+      },
+      azoom
+    );
+    return azoom;
+  };
+  return control;
+})().addTo(map);
+}
+
+function getData(){
+	d3.csv('https://raw.githubusercontent.com/dktaylor916/606_NetflixMap/main/oca_combined.csv')
+  .then(function(csv) {
+  data = csv;
+  
+  
+	
+  addMarkers();
+  addLegend();
+});
+
+}
+function addMarkers() {
+var max = d3.max(data,function(d){return d.total_ocas})
+  
+  rScale = d3.scaleLinear()
+    .domain([1, max])
+    .range([3, 7]);
+  data.forEach(function(d) {
+    var marker = L.circleMarker([+d.latitude, +d.longitude]);
+	
+	marker.setStyle({
+		radius: rScale(d.total_ocas),
+		color: '#E21221',
+		weight: 1,
+		fillColor: 'white',
+		fillOpacity: .8
+	});
+	
+	marker.bindPopup("<b>Total OCA's:</b> "+d.total_ocas)
+
+    marker.addTo(map);
+  })
+}
+
+function addLegend(){
+	
+	var legend = L.control({ position: "bottomleft" });
+	legend.onAdd = function(map) {
+	var div = L.DomUtil.create("div", "legend");
+	return div;
+	};
+	legend.addTo(map);
+
+	var legendSVG = d3.select('.legend')
+	.append('svg')
+	.attr('width',100)
+	.attr('height',110)
+
+	var totalOcas = data.map(function(d){
+		return d.total_ocas
+	})
+
+	
+
+	legendSVG
+	.append('circle')
+	.attr('cx',20)
+	.attr('cy',10)
+	.attr('r',rScale(1))
+	legendSVG
+	.append('circle')
+	.attr('cx',20)
+	.attr('cy',25)
+	.attr('r',rScale(50))
+	legendSVG
+	.append('circle')
+	.attr('cx',20)
+	.attr('cy',45)
+	.attr('r',rScale(150))
+	legendSVG
+	.append('circle')
+	.attr('cx',20)
+	.attr('cy',75)
+	.attr('r',rScale(300))
+
+	d3.selectAll('circle').attr('fill','#E21221').attr('stroke','white').attr('opacity',.8).attr("transform", "translate(" + 0 + ", " + 15 + ")")
+
+	legendSVG
+	.append('text')
+	.attr('x',43)
+	.attr('y',12)
+	.text('1')
+	legendSVG
+	.append('text')
+	.attr('x',40)
+	.attr('y',30)
+	.text('50')
+	legendSVG
+	.append('text')
+	.attr('x',38)
+	.attr('y',50)
+	.text('150')
+	legendSVG
+	.append('text')
+	.attr('x',38)
+	.attr('y',80)
+	.text('300')
+	legendSVG
+	.append('text')
+	.attr('x',0)
+	.attr('y',105)
+	.text('Total OCAs')
+	
+	d3.selectAll('text').attr('fill','white').attr("transform", "translate(" + 0 + ", " + 15 + ")")
+	
+	legendSVG
+	.append('text')
+	.attr('x',0)
+	.attr('y',10)
+	.attr('fill','white')
+	.text('Total OCAs')
+	
+	
+ }
+
+
+initMap();
+getData();
+
+
+</script>
+
+
+
+
+
+</body>
+</html>
