@@ -1,6 +1,7 @@
 body {
   padding: 0;
   margin: 0;
+  background-color: black;
 }
 html,
 body,
@@ -9,4 +10,34 @@ body,
   top: 0;
   bottom: 0;
   width: 100%;
+}
+#refreshButton1 {
+  position: absolute;
+  top: 30px;
+  right: 20px;
+  padding: 0;
+  z-index: 500000;
+  opacity: 1;
+  color: white;
+  font-size: 12px;
+}
+#refreshButton2 {
+  position: absolute;
+  top: 50px;
+  right: 41px;
+  padding: 0px;
+  z-index: 500000;
+  opacity: 1;
+  color: white;
+  font-size: 12px;
+}
+
+.leaflet-interactive:hover {
+  stroke: #ccfbfe;
+  stroke-width: 2;
+}
+
+.leaflet-interactive.active {
+  stroke: #00ff5e;
+  stroke-width: 2;
 }

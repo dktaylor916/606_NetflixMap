@@ -22,7 +22,15 @@
 <body>
 
 <div id="map"></div>
-
+<form name="form">
+<label id="refreshButton1" >
+<input  type="radio"  name="topten" class="radio" value="Movies" checked/> Movies
+</label>
+<label id="refreshButton2" >
+<input  type="radio" name="topten" class="radio" value="TV"> TV
+</label>
+</form>
+</body>
 
 <script src='https://api.mapbox.com/mapbox.js/v3.3.1/mapbox.js'></script>
 
@@ -34,12 +42,14 @@ crossorigin=""></script>
 
 <script>
 
-var data,map, rScale,geojson;
+
+
+var data,map, rScale,geojson,dataCurrent,countryClicked,countryClickedData,clicked;
 function initMap(){
-	map = new L.Map('map', {renderWorldCopies: false,minZoom:2,zoom: 3, center: new L.latLng([41.575730,13.002411]) });
+	map = new L.Map('map', {worldCopyJump:true,minZoom:3,zoom: 3, center: new L.latLng([41.575730,13.002411]) });
 
 	
-	map.addLayer(new L.TileLayer('https://api.mapbox.com/styles/v1/dktaybw/cld2yyeur003601r1zel104fr/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGt0YXlidyIsImEiOiJjbDlkenBvODMwa2twM3hvZ293bWVpaml1In0._QB63ZC3km-uev6mJkmacg'));
+	map.addLayer(new L.TileLayer('https://api.mapbox.com/styles/v1/dktaybw/clddc4h3q002501nmr8it053o/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZGt0YXlidyIsImEiOiJjbDlkenBvODMwa2twM3hvZ293bWVpaml1In0._QB63ZC3km-uev6mJkmacg'));
 	
 	map.addControl( new L.Control.Search({
 		url: 'https://nominatim.openstreetmap.org/search?format=json&q={s}',
@@ -62,6 +72,7 @@ function initMap(){
       "click",
       function () {
         map.setView(map.options.center, map.options.zoom);
+		d3.select('.toptenlist').selectAll('text').remove()
       },
       azoom
     );
@@ -70,7 +81,7 @@ function initMap(){
   return control;
 })().addTo(map);
 
-
+topTenData();
 addBorders();
 
 }
@@ -79,12 +90,13 @@ function addBorders(){
 	var myStyle = {
 	"fillOpacity":"0",
 	"z-index":"0",
-	"weight":"0",
-	"color":"#CCFBFE"
+	"weight":".1",
+	"color":"white",
+	'id':'countries'
 	
 };
 
-	d3.json('./data/countries.geojson').then(function(borders){
+	d3.json('./data/countries_v4.geojson').then(function(borders){
 		geojson=borders
 	L.geoJSON(borders,{
 		style:myStyle,
@@ -96,37 +108,84 @@ function addBorders(){
 
 function highlightFeature(e) {
     var layer = e.target;
-
-	layer.setStyle({ 
-	weight:2
-});
 	
+	layer.setStyle({ 
+		"weight":"2",
+		"color":"#CCFBFE"
+	})
+	
+
+
+
 }
 
 function resetHighlight(e) {
 	var layer = e.target;
+	
+	layer.setStyle({ 
+	"weight":".1",
+	"color":"white"
+	})
+	
 
-layer.setStyle({ 
-	weight:0
-});
+	
+
 }
 
+
+
+
 function zoomToFeature(e) {
+	
+	
+
+if (document.getElementsByClassName('leaflet-interactive active')[0] == undefined){
+
+}
+else{
+	document.getElementsByClassName('leaflet-interactive active')[0].classList.remove('active')
+}
+
+	
+	
+	d3.select('.toptenlist').selectAll('text').remove()
+
     map.fitBounds(e.target.getBounds());
+
+	
+	countryClicked = e.target.feature.properties.ISO_A2_EH
+	console.log(countryClicked)
+	if (document.getElementsByClassName('radio')[0].checked){
+	makeTopTenList(countryClicked,'Movies')
+	}
+	else{
+		makeTopTenList(countryClicked,'TV')
+	}
+
+	this.getElement().classList.add('active')
+	
+	console.log(this.getElement().classList)
+	
+
+
 }
 
 function onEachFeature(feature, layer) {
     layer.on({
-        mouseover: highlightFeature,
-        mouseout: resetHighlight,
-        click: zoomToFeature
+       /* mouseover: highlightFeature,
+        mouseout: resetHighlight,*/
+        click: zoomToFeature,
+		
     });
 }
 
-function top10(){
+function topTenData(){
+	
 	d3.tsv('./data/all-weeks-countries.tsv').then(function(d){
-		console.log(d)
+		dataCurrent = d
+		
 	})
+	
 }
 
 function getData(){
@@ -138,6 +197,7 @@ function getData(){
 	
   addMarkers();
   addLegend();
+  topTenList();
 });
 
 }
@@ -246,9 +306,73 @@ function addLegend(){
 	
  }
 
+function topTenList(){
+	var list = L.control({ position: "topright" });
+	list.onAdd = function(map) {
+	var div = L.DomUtil.create("div", "list");
+	return div;
+	};
+	list.addTo(map);
+
+	var listSVG = d3.select('.list')
+	.append('svg')
+	.attr('width','22vw')
+	.attr('height','30vh')
+	.attr('class','toptenlist')
+
+
+}
+
+function makeTopTenList(countryClicked,whichData){
+	
+	var tData
+	countryClickedData = d3.filter(dataCurrent,function(data){return data.country_iso2==countryClicked}).slice(0,20)
+	console.log(countryClickedData)
+	var movies = countryClickedData.slice(0,10)
+	var tv = countryClickedData.slice(10,20)
+
+	if (whichData == 'Movies'){
+		tData = movies
+	} 
+	else{
+		tData = tv
+	}
+
+	d3.selectAll('.toptenlist')
+	.selectAll('text')
+	.data(tData)
+	.enter()
+	.append('text')
+	.attr('class','mot')
+	.attr('x',0)
+	.attr('y',function(d,i){return i * 20 +40})
+	.attr('fill','white')
+	.attr('font-size','1.5vh')
+	.text(function (d){return d.weekly_rank +'. ' +d.show_title})
+
+	d3.selectAll('.toptenlist')
+	.append('text')
+	.attr('x',0)
+	.attr('y',20)
+	.attr('fill','white')
+	.attr('font-size','3vh')
+	.text(countryClickedData[0].country_name)
+}
+
 
 initMap();
 getData();
+
+document.getElementsByClassName('radio')[0].addEventListener('click',function(){
+	d3.selectAll('.toptenlist').selectAll('text').remove()
+	makeTopTenList(countryClicked,this.value)
+})
+
+document.getElementsByClassName('radio')[1].addEventListener('click',function(){
+	d3.selectAll('.toptenlist').selectAll('text').remove()
+	makeTopTenList(countryClicked,this.value)
+})
+
 
 
 </script>
