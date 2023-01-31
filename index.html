@@ -72,7 +72,14 @@ function initMap(){
       "click",
       function () {
         map.setView(map.options.center, map.options.zoom);
-		d3.select('.toptenlist').selectAll('text').remove()
+		d3.select('.toptenlist').selectAll('text').remove();
+		if (document.getElementsByClassName('leaflet-interactive active')[0] == undefined){
+
+}
+else{
+	document.getElementsByClassName('leaflet-interactive active')[0].classList.remove('active')
+}
+
       },
       azoom
     );
