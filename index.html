@@ -157,7 +157,7 @@ else{
 	
 	d3.select('.toptenlist').selectAll('text').remove()
 
-    map.fitBounds(e.target.getBounds());
+    map.flyToBounds(e.target.getBounds(),{ duration: 1.5 });
 
 	
 	countryClicked = e.target.feature.properties.ISO_A2_EH
